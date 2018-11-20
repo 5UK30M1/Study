@@ -1,0 +1,321 @@
+package com.company;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.layout.FlowPane;
+import javafx.stage.Stage;
+
+class TASK {
+    int N = 50 ;
+    double g = 200000;
+    double hl = 200;
+    double Tl = 50;
+    double hp = 400;
+    double Tp = 50;
+    double Qn = -1000;
+    double Qv = -5000;
+    double k = 50;
+    double alpha = 0.0005;
+    double T0 = 100;
+
+    int Nx = N;
+    int Ny = N;
+    double h;
+    double beta = 0.2;
+    double dt;
+    double Nt;
+
+    double AL = 0;
+    double AR = 0;
+
+    double AD = 0;
+    double AU = 0;
+
+    double tn[][];
+    double tnp[][];
+    TASK(double a, double b, int Tfin) {
+        h = a / Nx;
+        dt = beta * h * h / alpha;
+
+        Nt = (int)(Tfin / dt);
+        System.out.println(Nt);
+
+
+        dt = Tfin / Nt;
+
+        tn = new double[Nx + 1][Ny + 1];
+
+        tnp = new double[Nx + 1][Ny + 1];
+
+        for (int i = 0; i <= Nx; i++) {
+            for (int j = 0; j <= Ny; j++) {
+                tn[i][j] = T0;
+            }
+        }
+    }
+
+    void DoTask(){
+        for (int p = 1; p <= Nt; p++)
+        {
+            for (int i = 1; i <= Nx - 1; i++)
+            {
+                for (int j = 1; j <= Ny - 1; j++)
+                {
+                    tnp[i][j] = (1. - 4. * beta) * tn[i][j] + beta *
+                            (tn[i + 1][j] + tn[i - 1][j] + tn[i][j + 1] + tn[i][j - 1]) +
+                            beta * g * h * h / k;
+                }
+            }
+
+
+            for (int j = 1; j <= Ny - 1; j++) {
+                AL = tn[1][j] + 2. * hl * h / k * Tl - 2. * hl * h / k * tn[0][j];
+                tnp[0][j] = (1. - 4. * beta) * tn[0][j] + beta *
+                        (AL + tn[1][j] + tn[0][j + 1] + tn[0][j - 1]) +
+                        beta * g * h * h / k;
+            }
+
+            for (int j = 1; j <= Ny - 1; j++) {
+                AR = tn[Nx - 1][j] + 2. * hp * h / k * Tp -
+                        2. *hp *h /k *tn[Nx][j];
+                tnp[Nx][j] = (1. - 4. * beta) * tn[Nx][j] + beta *
+                        (AR + tn[Nx - 1][j] + tn[Nx][j + 1] + tn[Nx][j - 1])
+                        + beta * g * h * h / k;
+            }
+
+            for (int i = 1; i <= Nx - 1; i++) {
+                AD = tn[i][1] + 2. * h * Qn / k;
+                tnp[i][0] = (1 - 4. * beta) * tn[i][0] + beta *
+                        (AD + tn[i + 1][0] + tn[i - 1][0] + tn[i][1])
+                        + beta * g * h * h / k;
+            }
+
+            for (int i = 1; i <= Nx - 1; i++) {
+                AU = tn[i][Ny - 1] + 2. * h * Qv / k;
+                tnp[i][Ny] = (1 - 4. * beta) * tn[i][Ny] + beta *
+                        (AU + tn[i + 1][Ny] + tn[i - 1][Ny] + tn[i][Ny - 1])
+                        + beta * g * h * h / k;
+            }
+
+
+
+
+            tnp[0][0] = (1. / 2.) * (tnp[1][0] + tnp[0][1]);
+            tnp[Nx][0] = (1. / 2.) * (tnp[Nx - 1][0] + tnp[Nx][1]);
+            tnp[0][Ny] = (1. / 2.) * (tnp[1][Ny] + tnp[0][Ny - 1]);
+            tnp[Nx][Ny] = (1. / 2.) * (tnp[Nx - 1][Ny] + tnp[Nx][Ny - 1]);
+
+            for (int i = 0; i <= Nx; i++)
+            {
+                for (int j = 0; j <= Ny; j++)
+                {
+                    tn[i][j] = tnp[i][j];
+                }
+            }
+        }
+    }
+    void TaskOut(int Tfin){
+        System.out.println("t = " + Tfin);
+        for (int i = 0; i <= Nx; i++) {
+            for (int j = 0; j <= Ny; j++) {
+                        System.out.printf("%.2f      ", tn[i][j]);
+            }
+            System.out.println();
+        }
+    }
+
+    int getNx(){return Nx; }
+    int getNy(){return Ny; }
+    double getNt(){return Nt; }
+    double getT(int i){return tn[i][i];}
+    double getT1(int i){return tn[N/2][i];}
+    double getT2(int i){return tn[i][N/2];}
+    double getTij(int i, int j){return tn[i][j];}
+
+
+}
+
+public class Main extends Application {
+    public void start(Stage stage) {
+
+        stage.setTitle("Line Chart Sample");
+
+        NumberAxis xAxis = new NumberAxis(0.0, 0.5, 0.05);
+        xAxis.setLabel("");
+        final NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("T(°C)");
+        //creating the chart
+        final LineChart<Number,Number> lineChart =
+                new LineChart<>(xAxis,yAxis);
+        lineChart.setMinWidth(640);
+        lineChart.setMinHeight(480);
+        lineChart.setTitle("MainTask");
+        lineChart.setCreateSymbols(false);
+
+        XYChart.Series series0 = new XYChart.Series();
+        XYChart.Series series1 = new XYChart.Series();
+        XYChart.Series series2 = new XYChart.Series();
+        XYChart.Series series3 = new XYChart.Series();
+        XYChart.Series series4 = new XYChart.Series();
+        XYChart.Series series5 = new XYChart.Series();
+        XYChart.Series series6 = new XYChart.Series();
+
+        series0.setName("t = 0");
+        series1.setName("t = 10");
+        series2.setName("t = 20");
+        series3.setName("t = 30");
+        series4.setName("t = 40");
+        series5.setName("t = 50");
+        series6.setName("t = 100");
+
+        double a = 0.5, b = 0.5;
+        TASK t0 = new TASK(a, b, 0);
+        TASK t10 = new TASK(a, b, 10);
+        TASK t20 = new TASK(a, b, 20);
+        TASK t30 = new TASK(a, b, 30);
+        TASK t40 = new TASK(a, b, 40);
+        TASK t50 = new TASK(a, b, 50);
+        TASK t100 = new TASK(a, b, 100);
+        DoTask(t0, t10, t20, t30, t40, t50, t100);
+        double x = 0.0;
+        for (int i = 0; i <= t10.getNx(); i++){ // x <= b;
+            series0.getData().add(new XYChart.Data(x, t0.getT(i)));
+            series1.getData().add(new XYChart.Data(x, t10.getT(i)));
+            series2.getData().add(new XYChart.Data(x, t20.getT(i)));
+            series3.getData().add(new XYChart.Data(x, t30.getT(i)));
+            series4.getData().add(new XYChart.Data(x, t40.getT(i)));
+            series5.getData().add(new XYChart.Data(x, t50.getT(i)));
+            series6.getData().add(new XYChart.Data(x, t100.getT(i)));
+            x += b/t10.getNx();
+        }
+
+        lineChart.getData().add(series0);
+        lineChart.getData().add(series1);
+        lineChart.getData().add(series2);
+        lineChart.getData().add(series3);
+        lineChart.getData().add(series4);
+        lineChart.getData().add(series5);
+        lineChart.getData().add(series6);
+
+
+        NumberAxis xAxis1 = new NumberAxis(0.0, 0.5, 0.05);
+        xAxis.setLabel("");
+        final NumberAxis yAxis1 = new NumberAxis();
+        yAxis.setLabel("T(°C)");
+        final LineChart<Number,Number> lineChart1 =
+                new LineChart<>(xAxis1,yAxis1);
+        lineChart1.setMinWidth(640);
+        lineChart1.setMinHeight(480);
+        lineChart1.setTitle("a/2");
+        lineChart1.setCreateSymbols(false);
+
+        XYChart.Series series10 = new XYChart.Series();
+        XYChart.Series series11 = new XYChart.Series();
+        XYChart.Series series12 = new XYChart.Series();
+        XYChart.Series series13 = new XYChart.Series();
+        XYChart.Series series14 = new XYChart.Series();
+        XYChart.Series series15 = new XYChart.Series();
+        XYChart.Series series16 = new XYChart.Series();
+
+        series10.setName("t = 0");
+        series11.setName("t = 10");
+        series12.setName("t = 20");
+        series13.setName("t = 30");
+        series14.setName("t = 40");
+        series15.setName("t = 50");
+        series16.setName("t = 100");
+
+        x = 0.0;
+        for (int i = 0; i <= t10.getNx(); i++){ // x <= b;
+            series10.getData().add(new XYChart.Data(x, t0.getT1(i)));
+            series11.getData().add(new XYChart.Data(x, t10.getT1(i)));
+            series12.getData().add(new XYChart.Data(x, t20.getT1(i)));
+            series13.getData().add(new XYChart.Data(x, t30.getT1(i)));
+            series14.getData().add(new XYChart.Data(x, t40.getT1(i)));
+            series15.getData().add(new XYChart.Data(x, t50.getT1(i)));
+            series16.getData().add(new XYChart.Data(x, t100.getT1(i)));
+            x += b/t10.getNx();
+        }
+
+        lineChart1.getData().add(series10);
+        lineChart1.getData().add(series11);
+        lineChart1.getData().add(series12);
+        lineChart1.getData().add(series13);
+        lineChart1.getData().add(series14);
+        lineChart1.getData().add(series15);
+        lineChart1.getData().add(series16);
+
+
+        NumberAxis xAxis2 = new NumberAxis(0.0, 0.5, 0.05);
+        xAxis.setLabel("");
+        final NumberAxis yAxis2 = new NumberAxis();
+        yAxis.setLabel("T(°C)");
+        final LineChart<Number,Number> lineChart2 =
+                new LineChart<>(xAxis2,yAxis2);
+        lineChart2.setMinWidth(640);
+        lineChart2.setMinHeight(480);
+        lineChart2.setTitle("b/2");
+        lineChart2.setCreateSymbols(false);
+
+        XYChart.Series series20 = new XYChart.Series();
+        XYChart.Series series21 = new XYChart.Series();
+        XYChart.Series series22 = new XYChart.Series();
+        XYChart.Series series23 = new XYChart.Series();
+        XYChart.Series series24 = new XYChart.Series();
+        XYChart.Series series25 = new XYChart.Series();
+        XYChart.Series series26 = new XYChart.Series();
+
+        series20.setName("t = 0");
+        series21.setName("t = 10");
+        series22.setName("t = 20");
+        series23.setName("t = 30");
+        series24.setName("t = 40");
+        series25.setName("t = 50");
+        series26.setName("t = 100");
+
+        x = 0.0;
+        for (int i = 0; i <= t10.getNx(); i++){ // x <= b;
+            series20.getData().add(new XYChart.Data(x, t0.getT2(i)));
+            series21.getData().add(new XYChart.Data(x, t10.getT2(i)));
+            series22.getData().add(new XYChart.Data(x, t20.getT2(i)));
+            series23.getData().add(new XYChart.Data(x, t30.getT2(i)));
+            series24.getData().add(new XYChart.Data(x, t40.getT2(i)));
+            series25.getData().add(new XYChart.Data(x, t50.getT2(i)));
+            series26.getData().add(new XYChart.Data(x, t100.getT2(i)));
+            x += b/t10.getNx();
+        }
+
+        lineChart2.getData().add(series20);
+        lineChart2.getData().add(series21);
+        lineChart2.getData().add(series22);
+        lineChart2.getData().add(series23);
+        lineChart2.getData().add(series24);
+        lineChart2.getData().add(series25);
+        lineChart2.getData().add(series26);
+
+
+        FlowPane root = new FlowPane();
+        root.getChildren().addAll(lineChart, lineChart1, lineChart2);
+
+
+        Scene scene = new Scene(root, 1920, 500);
+
+
+
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    public void DoTask(TASK t0, TASK t10, TASK t20, TASK t30, TASK t40, TASK t50, TASK t100){
+        t0.DoTask();
+        t10.DoTask();
+        t20.DoTask();
+        t30.DoTask();
+        t40.DoTask();
+        t50.DoTask();
+        t100.DoTask();
+    }
+
+}
